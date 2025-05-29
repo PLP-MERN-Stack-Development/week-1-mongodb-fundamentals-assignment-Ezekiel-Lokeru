@@ -1,47 +1,131 @@
-[![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-2e0aaae1b6195c2367325f4f02e2d04e9abb55f0b24a779b69b11b9e10269abc.svg)](https://classroom.github.com/online_ide?assignment_repo_id=19667786&assignment_repo_type=AssignmentRepo)
-# MongoDB Fundamentals Assignment
+# MongoDB Queries Reference (`queries.js`)
 
-This assignment focuses on learning MongoDB fundamentals including setup, CRUD operations, advanced queries, aggregation pipelines, and indexing.
+This file contains a collection of MongoDB queries and aggregation pipelines for the `plp_bookstore` database, specifically targeting the `books` collection.
 
-## Assignment Overview
+## Contents
 
-You will:
-1. Set up a MongoDB database
-2. Perform basic CRUD operations
-3. Write advanced queries with filtering, projection, and sorting
-4. Create aggregation pipelines for data analysis
-5. Implement indexing for performance optimization
+- Basic CRUD operations
+- Advanced queries (filtering, projection, sorting, pagination)
+- Aggregation pipelines (data analysis)
+- Indexing and performance analysis
 
-## Getting Started
+---
 
-1. Accept the GitHub Classroom assignment invitation
-2. Clone your personal repository that was created by GitHub Classroom
-3. Install MongoDB locally or set up a MongoDB Atlas account
-4. Run the provided `insert_books.js` script to populate your database
-5. Complete the tasks in the assignment document
+## Usage
 
-## Files Included
+Copy and paste these queries into your MongoDB Shell (`mongosh`) or MongoDB Compass "Aggregations" or "Filter" sections as appropriate.  
+Make sure you have already populated your database using [`insert_books.js`](insert_books.js).
 
-- `Week1-Assignment.md`: Detailed assignment instructions
-- `insert_books.js`: Script to populate your MongoDB database with sample book data
+---
 
-## Requirements
+## Query List
 
-- Node.js (v18 or higher)
-- MongoDB (local installation or Atlas account)
-- MongoDB Shell (mongosh) or MongoDB Compass
+### 1. Find all books in a specific genre
+```js
+db.books.find({ genre: "Fiction" })
+```
 
-## Submission
+### 2. Find books published after a certain year
+```js
+db.books.aggregate([{ $match: { published_year: { $gte: 1960 }}}])
+```
 
-Your work will be automatically submitted when you push to your GitHub Classroom repository. Make sure to:
+### 3. Find books by a specific author
+```js
+db.books.find({ author: "George Orwell" })
+```
 
-1. Complete all tasks in the assignment
-2. Add your `queries.js` file with all required MongoDB queries
-3. Include a screenshot of your MongoDB database
-4. Update the README.md with your specific setup instructions
+### 4. Update the price of a specific book
+```js
+db.books.updateOne(
+  { title: "1984" },
+  { $set: { price: 12.99 } }
+)
+```
 
-## Resources
+### 5. Delete a book by its title
+```js
+db.books.deleteOne({ title: "Brave New World" })
+```
 
-- [MongoDB Documentation](https://docs.mongodb.com/)
-- [MongoDB University](https://university.mongodb.com/)
-- [MongoDB Node.js Driver](https://mongodb.github.io/node-mongodb-native/) 
+### 6. Find books that are both in stock and published after 2010
+```js
+db.books.find({ in_stock: true, published_year: { $gt: 2010 } })
+```
+
+### 7. Projection: Return only the title, author, and price fields
+```js
+db.books.find(
+  {},
+  { title: 1, author: 1, price: 1, _id: 0 }
+)
+```
+
+### 8. Sorting by price  
+Ascending:
+```js
+db.books.find().sort({ price: 1 })
+```
+Descending:
+```js
+db.books.find().sort({ price: -1 })
+```
+
+### 9. Pagination (5 books per page)
+```js
+const pageSize = 5;
+const pageNumber = 1; // Change this for different pages
+
+db.books.find()
+  .skip((pageNumber - 1) * pageSize)
+  .limit(pageSize)
+```
+
+### 10. Aggregation: Average price of books by genre
+```js
+db.books.aggregate([
+  { $group: { _id: "$genre", averagePrice: { $avg: "$price" } } },
+  { $sort: { averagePrice: 1 } }
+])
+```
+
+### 11. Aggregation: Author with the most books
+```js
+db.books.aggregate([
+  { $group: { _id: "$author", bookCount: { $sum: 1 } } },
+  { $sort: { bookCount: -1 } },
+  { $limit: 1 }
+])
+```
+
+### 12. Aggregation: Group books by publication decade and count them
+```js
+db.books.aggregate([
+  { $group: { _id: { $floor: { $divide: ["$published_year", 10] } }, bookCount: { $sum: 1 } } },
+  { $project: { decade: { $multiply: ["$_id", 10] }, bookCount: 1, _id: 0 } },
+  { $sort: { decade: 1 } }
+])
+```
+
+### 13. Indexing  
+Create an index on the title field:
+```js
+db.books.createIndex({ title: 1 })
+```
+Create a compound index on author and published_year:
+```js
+db.books.createIndex({ author: 1, published_year: -1 })
+```
+
+### 14. Performance Analysis with explain()
+```js
+db.books.find({ title: "1984" }).explain("executionStats")
+```
+
+---
+
+## Notes
+
+- These queries assume your database is named `plp_bookstore` and your collection is `books`.
+- For aggregation pipelines, use the "Aggregations" tab in MongoDB Compass or run in `mongosh`.
+- Adjust parameters (e.g., genre, author, page number) as needed for your use case.
